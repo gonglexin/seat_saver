@@ -21,7 +21,10 @@ import "phoenix_html"
 import socket from "./socket"
 
 var elmDiv = document.getElementById('elm-main')
-  , initialState = {seatLists: []}
+  , initialState = {
+      seatLists: [],
+      seatUpdates: {seatNo: 0, occupied: false}
+    }
   , elmApp = Elm.embed(Elm.SeatSaver, elmDiv, initialState);
 
 let channel = socket.channel("seats:planner", {})
@@ -34,3 +37,10 @@ channel.on('set_seats', data => {
   elmApp.ports.seatLists.send(data.seats)
 })
 
+// listen for seat requests
+elmApp.ports.seatRequests.subscribe(seat => {
+  channel.push("request_seat", seat)
+         .receive("error", payload => console.log(payload.message))
+})
+
+channel.on("seat_updated", seat => elmApp.ports.seatUpdates.send(seat))
